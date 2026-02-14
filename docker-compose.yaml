@@ -1,62 +1,35 @@
-version: '3'
-
 services:
     gitlab:
         container_name: gitlab
         
-        image: gitlab/gitlab-ee:17.2.2-ee.0
+        image: gitlab/gitlab-ee:18.8.4-ee.0
         restart: unless-stopped
 
-        hostname: 'codebase.xyz.com'
-
-        networks:
-            extnetwork:
-                ipv4_address: 172.20.1.5
+        hostname: 'gitlab.contoso.com'
 
         environment:
             TZ: "Asia/Shanghai"
-            GITLAB_OMNIBUS_CONFIG: |
-                gitlab_rails['ldap_enabled'] = true
-                gitlab_rails['ldap_servers'] = {
-                  'main' => {
-                    'label' => 'Windows AD',
-                    'host' =>  'ad.contoso.com',
-                    'port' => 389,
-                    'uid' => 'sAMAccountName',
-                    'bind_dn' => 'Administrator@contoso.com',
-                    'password' => '**********',
-                    'base' => 'dc=contoso,dc=com',
-                    'timeout' => 10,
-                    'active_directory' => true,
-                    'lowercase_usernames' => 'true',
-                    'retry_empty_result_with_codes' => [80],
-                    'allow_username_or_email_login' => false,
-                    'block_auto_created_users' => false
-                  }
-                }
-        
+
         volumes:
             - '/home/gitlab/config:/etc/gitlab'
             - '/home/gitlab/logs:/var/log/gitlab'
             - '/home/gitlab/data:/var/opt/gitlab'
-        
+            - './license_key.pub:/opt/gitlab/embedded/service/gitlab-rails/.license_encryption_key.pub'
+
         ports:
-            #- '20080:80'
-            # - '20443:443'
+            - '80:80'
             - '22:22'
         
-        shm_size: '32g'
+        shm_size: '16g'
 
 
-    gitlab-runner:
-        container_name: gitlab-runner
-        
-        image: gitlab/gitlab-runner:v17.2.1
+    gitlab-runner1:
+        container_name: gitlab-runner-1
+
+        user: 0:0
+
+        image: gitlab/gitlab-runner:v18.8.0
         restart: unless-stopped
-
-        networks:
-            extnetwork:
-                ipv4_address: 172.20.1.6
 
         volumes:
             - '/var/run/docker.sock:/var/run/docker.sock'
@@ -64,10 +37,3 @@ services:
 
         environment:
             TZ: "Asia/Shanghai"
-
-networks:
-    extnetwork:
-        driver: bridge
-        ipam:
-            config:
-                - subnet: 172.20.0.0/16
